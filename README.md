@@ -1,0 +1,2 @@
+# AI_StackChan2_for_DEBUG
+DEBUG用のAIスタックチャン
