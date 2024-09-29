@@ -119,7 +119,8 @@ SDカードがセットされていれば起動時に、読み込んだSDカー�
 - ca_openai.txt
   - 証明書の情報
   - 【取得方法】
-    - https://platform.openai.com/api-keys　にアクセスして以下の図の手順で取得
+    - https://platform.openai.com/api-keys
+    - にアクセスして以下の図の手順で取得
     - 取得した `GTS Root R4.crt` ファイルをca_openai.txtという名前に変更
 
 ![OpenAIのRoot証明書の取得手順](/img/openai-root-ca.jpg)
