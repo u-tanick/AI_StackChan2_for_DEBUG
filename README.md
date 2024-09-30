@@ -32,7 +32,7 @@ AIｽﾀｯｸﾁｬﾝのコードを元にデバッグ用にカスタマイズ
     - ChatGPTとの通信用
   - 2行目：`VOICEVOXのAPIキー`
     - キャラクターボイス用（デフォルトはずんだもん）
-  - 3行目：`OpenAIのAPIキー`　または　`Google Speech-to-TextのAPIキー`
+  - 3行目：`OpenAIのAPIキー（OpenAI Wisper STTに使用）`　または　`Google Speech-to-TextのAPIキー`
     - AIｽﾀｯｸﾁｬﾝに話しかけた声をテキストに変換する用
     - `Google Speech-to-Text` の方が高速？ただあれこれ用意するのが大変なのでひとまず動作させるなら `OpenAIのAPIキー` でいいと思います。
 
@@ -116,16 +116,26 @@ SDカードがセットされていれば起動時に、読み込んだSDカー�
 
 これらのファイルがあれば、そのファイルの証明書を利用してAPIに接続します。ファイルが無い場合は、あらかじめAIスタックチャンに設定されている証明書が利用されます。
 
-- ca_openai.txt
-  - 証明書の情報
-  - 【取得方法】
+証明書の取得方法は、それぞれ以下の手順となります。
+
+- `OpenAI ChatGPT` の場合
+  - アクセスURL
     - https://platform.openai.com/api-keys
-    - にアクセスして以下の図の手順で取得
-    - 取得した `GTS Root R4.crt` ファイルをca_openai.txtという名前に変更
+  - 取得手順
+    - 下の図の通り（Chromeブラウザを例に説明しています）
+  - ダウンロードファイル
+    - `GTS Root R4.crt`
+  - ファイル名を `ca_openai.txt` に変更
+
+- `Google Speech-to-Text` の場合
+  - アクセスURL
+    - https://cloud.google.com/speech-to-text?hl=ja
+  - 取得手順
+    - 下の図の通り（OpenAIの場合と同じ）
+  - ダウンロードファイル
+    - `GTS Root R1.crt`
+  - ファイル名を `ca_google.txt` に変更
 
 ![OpenAIのRoot証明書の取得手順](/img/openai-root-ca.jpg)
 
-- ca_google.txt
-  - 証明書の情報
-  - 【取得方法】
-    - ＜確認中＞
+以上です。

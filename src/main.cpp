@@ -863,6 +863,15 @@ void Wifi_setup() {
   }
 }
 
+// 音声認識直前にブザーを鳴らすために関数の場所を個々に移動
+void sw_tone(){
+      M5.Mic.end();
+        M5.Speaker.tone(1000, 100);
+      delay(500);
+        M5.Speaker.end();
+      M5.Mic.begin();
+}
+
 String SpeechToText(bool isGoogle){
   Serial.println("\r\nRecord start!\r\n");
 
@@ -882,6 +891,9 @@ String SpeechToText(bool isGoogle){
     root_ca_openai_tmp = root_ca_openai;
   }
   // --------------------------------------------------
+
+  sw_tone();
+  avatar.setSpeechText("音声認識開始");  
 
   Serial.println("-- Use CA -------------------");
   if( isGoogle) {
@@ -1354,14 +1366,6 @@ void setup()
 
 // -------------- loop()内から参照される関数（setupよりも上にあったほうが見やすそう） -----------------
 
-void sw_tone(){
-      M5.Mic.end();
-        M5.Speaker.tone(1000, 100);
-      delay(500);
-        M5.Speaker.end();
-      M5.Mic.begin();
-}
-
 // 実行結果の状態用変数
 // 0 : 通信成功
 // 1 : わかりません
@@ -1372,23 +1376,18 @@ int response_code = 0;
 // 実行結果を返すために関数の戻り値を void から int に変更
 int SST_ChatGPT() {
         bool prev_servo_home = servo_home;
-        // random_speak = true;
-        // random_time = -1;
         response_code = 0;
 #ifdef USE_SERVO
         servo_home = true;
 #endif
         avatar.setExpression(Expression::Happy);
-        // avatar.setSpeechText("御用でしょうか？");
         delay(2000);
         String ret;
         if(OPENAI_API_KEY != STT_API_KEY){
-          // Serial.println("Google STT");
-          dualPrintln("Google STTを使います");
+          // dualPrintln("Google STTを使います");
           ret = SpeechToText(true);
         } else {
-          // Serial.println("Whisper STT");
-          dualPrintln("Whisper STTを使います");
+          // dualPrintln("OpenAI Whisper STTを使います");
           ret = SpeechToText(false);
         }
         delay(2000);
@@ -1399,7 +1398,6 @@ int SST_ChatGPT() {
         Serial.println("音声認識結果");
         if(ret != "") {
           Serial.println(ret);
-          // avatar.setSpeechText("聞き取れませんでした");
           if (!mp3->isRunning() && speech_text=="" && speech_text_buffer == "") {
             response_code = exec_chatGPT(ret);
             mode = 0;
@@ -1429,38 +1427,65 @@ void loop()
   if (response_Voicevox_tts && BtnA_pressed) {
     // 成功
     avatar.setSpeechText("VOICEVOX通信成功");
+    avatar.setExpression(Expression::Happy);
     delay(3000);
     BtnA_pressed = false;
   } else if (!response_Voicevox_tts && BtnA_pressed) {
     // 失敗
     avatar.setSpeechText("VOICEVOX通信失敗");
+    avatar.setExpression(Expression::Sad);
     delay(3000);
     BtnA_pressed = false;
   } else if (response_Voicevox_tts && BtnB_pressed && response_code == 0) {
     // 成功
+    avatar.setSpeechText("固定テキストの");
+    delay(2000);
     avatar.setSpeechText("ChatGPT通信成功");
     delay(3000);
     BtnB_pressed = false;
+  } else if (response_Voicevox_tts && BtnC_pressed && response_code == 0) {
+    // 成功
+    if(OPENAI_API_KEY != STT_API_KEY){
+      // Google STTを使っている場合
+      avatar.setSpeechText("Google STTでの");
+    } else {
+      // OpenAI Whisper STTを使っている場合
+      avatar.setSpeechText("OpenAI Wisperでの");
+    }
+    delay(3000);
+    avatar.setSpeechText("音声テキストの");
+    delay(2000);
+    avatar.setSpeechText("ChatGPT通信成功");
+    delay(3000);
+    BtnC_pressed = false;
   } else if ((BtnB_pressed || BtnC_pressed) && response_code == 1) {
     // わかりません
-    avatar.setSpeechText("APIか証明書があやしい");
+    avatar.setSpeechText("API通信が失敗したか");
+    delay(2000);
+    avatar.setSpeechText("証明書が古いのかも");
     delay(3000);
     BtnB_pressed = false;
+    BtnC_pressed = false;
   } else if ((BtnB_pressed || BtnC_pressed) && response_code == 2) {
     // エラーです
     avatar.setSpeechText("JSON変換失敗、通信不安定？");
     delay(3000);
     BtnB_pressed = false;
+    BtnC_pressed = false;
   } else if (BtnC_pressed && response_code == 3) {
     // 聞き取れませんでした
     for (int i = 1; i <= 2; i++) {
-      avatar.setSpeechText("音声toテキスト失敗");
+      avatar.setSpeechText("音声→テキスト変換失敗");
       delay(2000);
-      avatar.setSpeechText("APIがあやしい");
+      avatar.setSpeechText("APIが古い、間違えてるか");
       delay(2000);
-      avatar.setSpeechText("Google STT課金必要かも");
-      delay(3000);
-      avatar.setSpeechText("Wisper STTに変えてみて");
+      if(OPENAI_API_KEY != STT_API_KEY){
+        // Google STTを使っている場合
+        avatar.setSpeechText("Google STTの課金切れかも");
+      } else {
+        // OpenAI Whisper STTを使っている場合
+        avatar.setSpeechText("OpenAIの課金切れかも");
+      }
       delay(3000);
     }
     BtnC_pressed = false;
@@ -1481,8 +1506,6 @@ void loop()
     char buff[100];
     sprintf(buff,"ボイスボックスと通信できたのだ。");
     speech_text = String(buff);
-    avatar.setExpression(Expression::Happy);
-    delay(2000);
     avatar.setExpression(Expression::Neutral);
   }
 
@@ -1520,8 +1543,11 @@ void loop()
   // ChatGPTとの通信テスト（マイク音声送信）
   if (M5.BtnC.wasPressed())
   {
+    sw_tone();
     BtnC_pressed = true;
-    avatar.setSpeechText("どうぞ話しかけてください");
+    avatar.setSpeechText("次にピッとなったら");
+    delay(3000);
+    avatar.setSpeechText("話しかけてください");
 
     response_code = SST_ChatGPT();
     if (response_code == 0) {
@@ -1541,16 +1567,14 @@ void loop()
       avatar.setExpression(Expression::Sad);
     } else if (response_code == 3) {
       // 聞き取れませんでした
-      char buff[330];
-      sprintf(buff,"話しかけた音声のテキスト変換で失敗しました。Google STTをご使用の場合、APIキーが古いか誤っている、課金が必要などの可能性があります。オープンエーアイ ウィスパーをご使用の場合、APIキーが古いか、誤っている可能性があります。");
+      char buff[200];
+      sprintf(buff,"話しかけた音声のテキスト変換で失敗しました。APIキーが古いか誤っている、課金のクレジットが切れているなどの可能性があります。");
       speech_text = String(buff);
       avatar.setExpression(Expression::Sad);
     }
-    delay(2000);
   }
 
   if(speech_text != ""){
-    // avatar.setExpression(Expression::Happy);
     speech_text_buffer = speech_text;
     speech_text = "";
     M5.Mic.end();
